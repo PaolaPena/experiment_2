@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+  <html>
+    <head>
+      <title>Common Ground Experiment 2</title>
+      <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+      <script src='jspsych/jspsych.js'></script>
+      <script src='jspsych/plugins/jspsych-html-keyboard-response.js'></script>
+      <script src="jspsych/plugins/jspsych-survey-multi-choice.js"></script>
+      <script src='jspsych/plugins/jspsych-cue-target.js'></script>
+      <script src="jspsych/plugins/jspsych-external-html.js"></script>
+      <script src='jspsych/plugins/jspsych-survey-likert.js'></script>
+      <script src="jspsych/plugins/jspsych-instructions.js"></script>
+      <script src='jspsych/plugins/jspsych-html-button-response.js'></script>
+      <script src="jspsych/plugins/jspsych-video.js"></script>
+      <link href='jspsych/css/jspsych.css' rel='stylesheet' type='text/css'></link>
+    </head>
+    <body></body>
+    <script>
+
+    var timeline = [];
+
+    /*Consent */
+    var consent = {
+      type: 'external-html',
+      url: '../views/consent.html',
+      check_fn: function(){
+        startTime = Date.now();
+        return true;
+      },
+      cont_btn: 'consent'
+    }
+
+    /*welcome message trial*/
+    var welcome = {
+      type:'html-keyboard-response',
+      stimulus:  "<p><font size='6'> Welcome to the experiment.</p>"+
+      "<p>Press any key to begin.</font></p>"
+    };
+
+    /* define instructions task 1*/
+    var instructions = {
+      type: 'instructions',
+      pages: ["<p><font size = '5'>In this experiment, you will try to <b>guess a cue target.</b> </font></p>",
+
+      "<p><font size = '5'> We will give you a <b> single English word clue </b> and,"+
+      "<p>your task is to think what the target is given that clue.</font></p>",
+
+      "<p><font size = '5'> For example, we might give you the clue <b> 'puppy'</b>. You need to think what the original target is, like <b> 'dog'.</font></p>",
+
+      "<p><font size = '5'> Once you make your guess, you'll get to see the original target and,</p>"+
+      "<p>you will rate <b>how good</b> you think the clue was.</font></p>",
+
+      "<p><font size = '5'> Let's do a quik practice and then we will move on to the actual experiment</font></p>"],
+      show_clickable_nav: true
+    };
+
+    /*pratice task 1*/
+
+    //Justin stuff
+    var cues = [
+      {qNo: 0, target: '<font size="5">Money</font>'},
+    //  {qNo: 1, target: 'Butter'},
+    //  {qNo: 2, target: 'Seek'}
+    ]
+    var cueshuffle = jsPsych.randomization.repeat(cues, 1)
+    var cue_target = {
+      type: 'cue-target',
+      preamble: '<font size = "5"> What do you think is the target word given this clue?</font>',
+      timeline: cueshuffle,
+      post_trial_gap: 600,
+      on_finish: function(data){
+        clue = data.target
+        guess = data.response
+        turn +=1;
+      }
+    };
+
+    var how_good = ['0 \n Not Good At All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \n Really Good'];
+    var rater = {
+      type: 'survey-likert',
+      questions: function(){
+        return[{prompt: "<p><font size='5'>The target was Bank</font></p>"+
+        "<p><font size= '5'> You guessed "+guess+".</font></p>"+
+        "<p><font size = '5'>How good do you think is the clue "+clue+" to guess the target word?</font></p>",
+      labels: how_good, required: true}]
+    },
+      on_finish: function(data){
+        speaker_rating = data.responses
+      }
+    };
+
+
+    var end_pract = {
+      type:'html-keyboard-response',
+      stimulus:  "<p><font size='5'> That's the end of the pratice. Now, let's start the experiment.</p>"+
+      "<p>Press any key to start.</p>"+
+      "<p><b>Have fun!</b></font></p>"
+    };
+
+    var turn = 0;
+
+    var words = [
+      {qNo: 0, clue: 'Money', original: 'Bank'},
+      {qNo: 1, clue: 'Margarine', original: 'Butter'},
+      {qNo: 2, clue: 'Hide', original: 'Seek'}
+      ]
+
+    var cue_target_test = {
+      type: 'cue-target',
+      preamble: '<font size = "5"> What do you think is the target word given this clue?</font>',
+      target: function(){return words[turn].clue},
+      qNo: function(){return words[turn].qNo},
+      post_trial_gap: 600,
+      on_finish: function(data){
+        target = words[turn].original;
+        clue = words[turn].clue;
+        guess = data.response;
+        turn += 1;
+        console.log(turn);
+        if (turn == words.length){
+          console.log("the end");
+          keep_going = false;
+        };
+
+
+      }
+    };
+
+    var how_good = ['0 \n Not Good At All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10 \n Really Good'];
+    var rater_test = {
+      type: 'survey-likert',
+      questions: function(){
+        return [{
+        prompt: "<p><font size='5'>The target was " +target+ "</font><font size= '5'> and, you guessed " +guess+ "</p>"+
+        "<p>How good do you think is the clue "+clue+" to guess the target word?</font></p>",
+      labels: how_good, required: true
+    }]},
+      on_finish: function(data){
+        console.log(turn);
+        speaker_rating = data.responses
+
+      }
+    };
+
+    var trial = {
+      timeline: [cue_target_test, rater_test],
+    };
+
+    var keep_going = true;
+
+
+    var end = {
+      type: 'html-keyboard-response',
+      stimulus: 'The experiment has ended. Thank you for your participation!',
+      response_ends_trial: false,
+      trial_duration: 5000
+    };
+
+    /*var if_end = {
+      timeline: [end],
+      conditional_function: function(){
+        if (keep_going == true){
+          return false;
+        } else {
+          return true;
+        }
+      }
+    };*/
+
+    var loop = {
+      timeline: [trial],
+      loop_function: function(){
+        if (keep_going == true){
+          return true;
+        } else {
+          return false;
+        }
+      }
+    };
+
+
+    //timeline.push(consent);
+    timeline.push(welcome);
+    timeline.push(instructions);
+    timeline.push(cue_target);
+    timeline.push(rater);
+    timeline.push(end_pract);
+    timeline.push(trial);
+    timeline.push(loop);
+    timeline.push(end);
+
+
+    /* start the experiment */
+        jsPsych.init({
+          default_iti: 500,
+          timeline: timeline,
+          on_finish: function(){
+            jsPsych.data.displayData()
+          }
+        });
+
+
+    </script>
+  </html>
